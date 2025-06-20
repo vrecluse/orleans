@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans.Configuration;
 using Orleans.Messaging;
 
@@ -17,6 +18,7 @@ namespace Orleans.Runtime.Messaging
         private readonly OverloadDetector overloadDetector;
         private readonly SiloAddress myAddress;
         private readonly string myClusterId;
+        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
 
         public GatewayInboundConnection(
             ConnectionContext connection,
@@ -27,7 +29,7 @@ namespace Orleans.Runtime.Messaging
             ConnectionOptions connectionOptions,
             MessageCenter messageCenter,
             ConnectionCommon connectionShared,
-            ConnectionPreambleHelper connectionPreambleHelper)
+            ConnectionPreambleHelper connectionPreambleHelper, IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
             : base(connection, middleware, connectionShared)
         {
             this.connectionOptions = connectionOptions;
@@ -35,6 +37,7 @@ namespace Orleans.Runtime.Messaging
             this.overloadDetector = overloadDetector;
             this.messageCenter = messageCenter;
             this.connectionPreambleHelper = connectionPreambleHelper;
+            this.clusterInstrumentOptions = clusterInstrumentOptions;
             this.myAddress = siloDetails.SiloAddress;
             this.myClusterId = siloDetails.ClusterId;
         }
@@ -45,13 +48,13 @@ namespace Orleans.Runtime.Messaging
 
         protected override void RecordMessageReceive(Message msg, int numTotalBytes, int headerBytes)
         {
-            MessagingInstruments.OnMessageReceive(msg, numTotalBytes, headerBytes, ConnectionDirection);
+            MessagingInstruments.OnMessageReceive(msg, numTotalBytes, headerBytes, ConnectionDirection, clusterInstrumentOptions.CurrentValue.DetailedMessageReceived);
             GatewayInstruments.GatewayReceived.Add(1);
         }
 
         protected override void RecordMessageSend(Message msg, int numTotalBytes, int headerBytes)
         {
-            MessagingInstruments.OnMessageSend(msg, numTotalBytes, headerBytes, ConnectionDirection);
+            MessagingInstruments.OnMessageSend(msg, numTotalBytes, headerBytes, ConnectionDirection, clusterInstrumentOptions.CurrentValue.DetailedMessageSent);
             GatewayInstruments.GatewaySent.Add(1);
         }
 

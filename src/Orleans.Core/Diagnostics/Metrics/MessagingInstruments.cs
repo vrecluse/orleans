@@ -1,8 +1,12 @@
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Threading;
+using Orleans.Configuration;
 using Orleans.Messaging;
+using Orleans.Serialization.Invocation;
 
 namespace Orleans.Runtime
 {
@@ -92,36 +96,80 @@ namespace Orleans.Runtime
             ReroutedMessagesCounter.Add(1, new KeyValuePair<string, object>("Direction", msg.Direction.ToString()));
         }
 
-        internal static void OnMessageReceive(Message msg, int numTotalBytes, int headerBytes, ConnectionDirection connectionDirection, SiloAddress remoteSiloAddress = null)
+        internal static void OnMessageReceive(Message msg, int numTotalBytes, int headerBytes, ConnectionDirection connectionDirection, bool detailed, SiloAddress remoteSiloAddress = null)
         {
             if (MessageReceivedSizeHistogram.Enabled)
             {
-                if (remoteSiloAddress != null)
+                if (detailed && msg.InterfaceType is { })
                 {
-                    MessageReceivedSizeHistogram.Record(numTotalBytes, new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()), new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()), new KeyValuePair<string, object>("silo", remoteSiloAddress));
+                    var tagList = new System.Diagnostics.TagList();
+                    tagList.Add("ConnectionDirection", connectionDirection.ToString());
+                    tagList.Add("MessageDirection", msg.Direction.ToString());
+                    if (remoteSiloAddress != null)
+                        tagList.Add("silo", remoteSiloAddress);
+                    if (msg.BodyObject is Response response)
+                    {
+                        tagList.Add("Response", $"{msg.InterfaceType.ToString()}-{response.GetType().Name}");
+                    }
+                    else
+                    {
+                        tagList.Add("Response", $"{msg.InterfaceType.ToString()}");
+                    }
+
+                    MessageReceivedSizeHistogram.Record(numTotalBytes, tagList);
                 }
                 else
                 {
-                    MessageReceivedSizeHistogram.Record(numTotalBytes, new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()), new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()));
+                    if (remoteSiloAddress != null)
+                    {
+                        MessageReceivedSizeHistogram.Record(numTotalBytes,
+                            new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()),
+                            new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()),
+                            new KeyValuePair<string, object>("silo", remoteSiloAddress));
+                    }
+                    else
+                    {
+                        MessageReceivedSizeHistogram.Record(numTotalBytes,
+                            new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()),
+                            new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()));
+                    }
                 }
             }
 
             Interlocked.Add(ref _headerBytesReceived, headerBytes);
         }
 
-        internal static void OnMessageSend(Message msg, int numTotalBytes, int headerBytes, ConnectionDirection connectionDirection, SiloAddress remoteSiloAddress = null)
+        internal static void OnMessageSend(Message msg, int numTotalBytes, int headerBytes, ConnectionDirection connectionDirection, bool detailed, SiloAddress remoteSiloAddress = null)
         {
             Debug.Assert(numTotalBytes >= 0, $"OnMessageSend(numTotalBytes={numTotalBytes})");
 
             if (MessageSentSizeHistogram.Enabled)
             {
-                if (remoteSiloAddress != null)
+                if (detailed && msg.BodyObject is IRequest request)
                 {
-                    MessageSentSizeHistogram.Record(numTotalBytes, new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()), new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()), new KeyValuePair<string, object>("silo", remoteSiloAddress));
+                    var tagList = new System.Diagnostics.TagList();
+                    tagList.Add("ConnectionDirection", connectionDirection.ToString());
+                    tagList.Add("MessageDirection", msg.Direction.ToString());
+                    if (remoteSiloAddress != null)
+                        tagList.Add("silo", remoteSiloAddress);
+                    tagList.Add("Request", $"{request.GetInterfaceName()}.{request.GetMethodName()}");
+                    MessageSentSizeHistogram.Record(numTotalBytes, tagList);
                 }
                 else
                 {
-                    MessageSentSizeHistogram.Record(numTotalBytes, new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()), new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()));
+                    if (remoteSiloAddress != null)
+                    {
+                        MessageSentSizeHistogram.Record(numTotalBytes,
+                            new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()),
+                            new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()),
+                            new KeyValuePair<string, object>("silo", remoteSiloAddress));
+                    }
+                    else
+                    {
+                        MessageSentSizeHistogram.Record(numTotalBytes,
+                            new KeyValuePair<string, object>("ConnectionDirection", connectionDirection.ToString()),
+                            new KeyValuePair<string, object>("MessageDirection", msg.Direction.ToString()));
+                    }
                 }
             }
 

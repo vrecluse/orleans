@@ -4,6 +4,15 @@ using Orleans.Runtime;
 namespace Orleans.Configuration
 {
     /// <summary>
+    /// Configures the Orleans cluster instrument options.
+    /// </summary>
+    public class ClusterInstrumentOptions
+    {
+        public static ClusterInstrumentOptions Default { get; } = new ClusterInstrumentOptions();
+        public bool DetailedMessageSent { get; set; }
+        public bool DetailedMessageReceived { get; set; }
+    }
+    /// <summary>
     /// Configures the Orleans cluster.
     /// </summary>
     public class ClusterOptions
@@ -37,6 +46,7 @@ namespace Orleans.Configuration
         /// Gets or sets a unique identifier for this service, which should survive deployment and redeployment, where as <see cref="ClusterId"/> might not.
         /// </summary>
         public string ServiceId { get; set; } = DefaultServiceId;
+
     }
 
     /// <summary>

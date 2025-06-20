@@ -22,6 +22,7 @@ namespace Orleans.Runtime.Messaging
         private readonly SiloConnectionOptions siloConnectionOptions;
         private readonly OverloadDetector overloadDetector;
         private readonly Gateway gateway;
+        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
 
         public GatewayConnectionListener(
             IServiceProvider serviceProvider,
@@ -34,7 +35,7 @@ namespace Orleans.Runtime.Messaging
             ConnectionManager connectionManager,
             ConnectionCommon connectionShared,
             ConnectionPreambleHelper connectionPreambleHelper,
-            ILogger<GatewayConnectionListener> logger)
+            ILogger<GatewayConnectionListener> logger, IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
             : base(serviceProvider.GetRequiredKeyedService<IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, connectionShared)
         {
             this.siloConnectionOptions = siloConnectionOptions.Value;
@@ -45,6 +46,7 @@ namespace Orleans.Runtime.Messaging
             this.connectionShared = connectionShared;
             this.connectionPreambleHelper = connectionPreambleHelper;
             this.logger = logger;
+            this.clusterInstrumentOptions = clusterInstrumentOptions;
             this.endpointOptions = endpointOptions.Value;
         }
 
@@ -61,7 +63,10 @@ namespace Orleans.Runtime.Messaging
                 this.ConnectionOptions,
                 this.messageCenter,
                 this.connectionShared,
-                this.connectionPreambleHelper);
+                this.connectionPreambleHelper,
+                this.clusterInstrumentOptions
+                );
+
         }
 
         protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)
