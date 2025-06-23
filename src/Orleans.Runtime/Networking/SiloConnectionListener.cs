@@ -20,7 +20,7 @@ namespace Orleans.Runtime.Messaging
         private readonly ConnectionCommon connectionShared;
         private readonly ProbeRequestMonitor probeRequestMonitor;
         private readonly ConnectionPreambleHelper connectionPreambleHelper;
-        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
+        private readonly IMessagingInstrumentService messagingInstrumentService;
 
         public SiloConnectionListener(
             IServiceProvider serviceProvider,
@@ -32,7 +32,7 @@ namespace Orleans.Runtime.Messaging
             ConnectionManager connectionManager,
             ConnectionCommon connectionShared,
             ProbeRequestMonitor probeRequestMonitor,
-            ConnectionPreambleHelper connectionPreambleHelper, IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
+            ConnectionPreambleHelper connectionPreambleHelper, IMessagingInstrumentService messagingInstrumentService)
             : base(serviceProvider.GetRequiredKeyedService<IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, connectionShared)
         {
             this.siloConnectionOptions = siloConnectionOptions.Value;
@@ -42,7 +42,7 @@ namespace Orleans.Runtime.Messaging
             this.connectionShared = connectionShared;
             this.probeRequestMonitor = probeRequestMonitor;
             this.connectionPreambleHelper = connectionPreambleHelper;
-            this.clusterInstrumentOptions = clusterInstrumentOptions;
+            this.messagingInstrumentService = messagingInstrumentService;
             this.endpointOptions = endpointOptions.Value;
         }
 
@@ -61,7 +61,7 @@ namespace Orleans.Runtime.Messaging
                 this.connectionShared,
                 this.probeRequestMonitor,
                 this.connectionPreambleHelper,
-                this.clusterInstrumentOptions
+                this.messagingInstrumentService
                 );
         }
 

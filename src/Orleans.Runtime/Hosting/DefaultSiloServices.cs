@@ -65,6 +65,8 @@ namespace Orleans.Hosting
             services.AddLogging();
             services.AddOptions();
             services.TryAddSingleton<TimeProvider>(TimeProvider.System);
+            services.TryAddSingleton<IMessagingInstrumentAttributeProvider, MessagingInstrumentAttributeProvider>();
+            services.TryAddSingleton<IMessagingInstrumentService, MessagingInstrumentService>();
 
             services.TryAddSingleton(typeof(IOptionFormatter<>), typeof(DefaultOptionsFormatter<>));
             services.TryAddSingleton(typeof(IOptionFormatterResolver<>), typeof(DefaultOptionsFormatterResolver<>));

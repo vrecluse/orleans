@@ -23,7 +23,7 @@ namespace Orleans.Runtime.Messaging
         private readonly ConnectionOptions connectionOptions;
         private readonly ProbeRequestMonitor probeMonitor;
         private readonly ConnectionPreambleHelper connectionPreambleHelper;
-        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
+        private readonly IMessagingInstrumentService messagingInstrumentService;
 
         public SiloConnection(
             SiloAddress remoteSiloAddress,
@@ -36,7 +36,7 @@ namespace Orleans.Runtime.Messaging
             ConnectionCommon connectionShared,
             ProbeRequestMonitor probeMonitor,
             ConnectionPreambleHelper connectionPreambleHelper,
-            IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
+            IMessagingInstrumentService messagingInstrumentService)
             : base(connection, middleware, connectionShared)
         {
             this.messageCenter = messageCenter;
@@ -44,7 +44,7 @@ namespace Orleans.Runtime.Messaging
             this.connectionOptions = connectionOptions;
             this.probeMonitor = probeMonitor;
             this.connectionPreambleHelper = connectionPreambleHelper;
-            this.clusterInstrumentOptions = clusterInstrumentOptions;
+            this.messagingInstrumentService = messagingInstrumentService;
             this.LocalSiloAddress = localSiloDetails.SiloAddress;
             this.LocalClusterId = localSiloDetails.ClusterId;
             this.RemoteSiloAddress = remoteSiloAddress;
@@ -62,12 +62,12 @@ namespace Orleans.Runtime.Messaging
 
         protected override void RecordMessageReceive(Message msg, int numTotalBytes, int headerBytes)
         {
-            MessagingInstruments.OnMessageReceive(msg, numTotalBytes, headerBytes, ConnectionDirection, clusterInstrumentOptions.CurrentValue.DetailedMessageReceived, RemoteSiloAddress);
+            messagingInstrumentService.OnMessageReceive(msg, numTotalBytes, headerBytes, ConnectionDirection, RemoteSiloAddress);
         }
 
         protected override void RecordMessageSend(Message msg, int numTotalBytes, int headerBytes)
         {
-            MessagingInstruments.OnMessageSend(msg, numTotalBytes, headerBytes, ConnectionDirection, clusterInstrumentOptions.CurrentValue.DetailedMessageSent, RemoteSiloAddress);
+            messagingInstrumentService.OnMessageSend(msg, numTotalBytes, headerBytes, ConnectionDirection, RemoteSiloAddress);
         }
 
         protected override void OnReceivedMessage(Message msg)

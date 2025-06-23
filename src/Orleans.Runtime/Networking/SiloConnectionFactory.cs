@@ -22,7 +22,7 @@ namespace Orleans.Runtime.Messaging
         private ConnectionManager connectionManager;
         private MessageCenter messageCenter;
         private ISiloStatusOracle siloStatusOracle;
-        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
+        private readonly IMessagingInstrumentService messagingInstrumentService;
 
         public SiloConnectionFactory(
             IServiceProvider serviceProvider,
@@ -31,7 +31,7 @@ namespace Orleans.Runtime.Messaging
             ILocalSiloDetails localSiloDetails,
             ConnectionCommon connectionShared,
             ProbeRequestMonitor probeRequestMonitor,
-            ConnectionPreambleHelper connectionPreambleHelper, IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
+            ConnectionPreambleHelper connectionPreambleHelper, IMessagingInstrumentService messagingInstrumentService)
             : base(serviceProvider.GetRequiredKeyedService<IConnectionFactory>(ServicesKey), serviceProvider, connectionOptions)
         {
             this.serviceProvider = serviceProvider;
@@ -40,7 +40,7 @@ namespace Orleans.Runtime.Messaging
             this.connectionShared = connectionShared;
             this.probeRequestMonitor = probeRequestMonitor;
             this.connectionPreambleHelper = connectionPreambleHelper;
-            this.clusterInstrumentOptions = clusterInstrumentOptions;
+            this.messagingInstrumentService = messagingInstrumentService;
         }
 
         public override ValueTask<Connection> ConnectAsync(SiloAddress address, CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ namespace Orleans.Runtime.Messaging
                 this.connectionShared,
                 this.probeRequestMonitor,
                 this.connectionPreambleHelper,
-                clusterInstrumentOptions);
+                this.messagingInstrumentService);
         }
 
         protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)

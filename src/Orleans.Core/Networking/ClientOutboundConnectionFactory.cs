@@ -17,21 +17,21 @@ namespace Orleans.Runtime.Messaging
         private volatile bool isInitialized;
         private ClientMessageCenter messageCenter;
         private ConnectionManager connectionManager;
-        private readonly IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions;
+        private IMessagingInstrumentService messagingInstrumentService;
 
         public ClientOutboundConnectionFactory(
             IOptions<ConnectionOptions> connectionOptions,
             IOptions<ClientConnectionOptions> clientConnectionOptions,
             IOptions<ClusterOptions> clusterOptions,
             ConnectionCommon connectionShared,
-            ConnectionPreambleHelper connectionPreambleHelper, IOptionsMonitor<ClusterInstrumentOptions> clusterInstrumentOptions)
+            ConnectionPreambleHelper connectionPreambleHelper, IMessagingInstrumentService messagingInstrumentService)
             : base(connectionShared.ServiceProvider.GetRequiredKeyedService<IConnectionFactory>(ServicesKey), connectionShared.ServiceProvider, connectionOptions)
         {
             this.connectionShared = connectionShared;
             this.clientConnectionOptions = clientConnectionOptions.Value;
             this.clusterOptions = clusterOptions.Value;
             this.connectionPreambleHelper = connectionPreambleHelper;
-            this.clusterInstrumentOptions = clusterInstrumentOptions;
+            this.messagingInstrumentService = messagingInstrumentService;
         }
 
         protected override Connection CreateConnection(SiloAddress address, ConnectionContext context)
@@ -48,7 +48,7 @@ namespace Orleans.Runtime.Messaging
                 this.connectionShared,
                 this.connectionPreambleHelper,
                 this.clusterOptions,
-                this.clusterInstrumentOptions
+                this.messagingInstrumentService
                 );
         }
 
