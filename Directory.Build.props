@@ -50,17 +50,17 @@
 
   <!-- Versioning properties -->
   <PropertyGroup>
-    <AssemblyVersion>9.0.0.0</AssemblyVersion>
-    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">9.1.2</VersionPrefix>
+    <AssemblyVersion>9.0.0.1</AssemblyVersion>
+    <VersionPrefix Condition=" '$(VersionPrefix)'=='' ">9.1.3</VersionPrefix>
   </PropertyGroup>
 
   <!-- For Debug builds generated a date/time dependent version suffix -->
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-dev-1</VersionSuffix>
+    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-dev-5</VersionSuffix>
     <VersionSuffix Condition=" '$(VersionDateSuffix)'!='' ">$(VersionSuffix)-$(VersionDateSuffix)</VersionSuffix>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Release' ">
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-1</VersionSuffix>
+    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-5</VersionSuffix>
   </PropertyGroup>
 
   <Import Condition=" '$(OrleansBuildTimeCodeGen)' == 'true' " Project="$(MSBuildThisFileDirectory)src/Orleans.CodeGenerator/build/Microsoft.Orleans.CodeGenerator.props" />
