@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using Microsoft.Extensions.Options;
@@ -27,25 +28,18 @@ internal interface IMessagingInstrumentService
         SiloAddress remoteSiloAddress = null);
 }
 
-internal class MessagingInstrumentService : IMessagingInstrumentService
+internal class MessagingInstrumentService(
+    IMessagingInstrumentAttributeProvider attributeProvider,
+    IOptionsMonitor<ClusterInstrumentOptions> instrumentOptions)
+    : IMessagingInstrumentService
 {
-    private IMessagingInstrumentAttributeProvider _attributeProvider;
-    private readonly IOptionsMonitor<ClusterInstrumentOptions> _instrumentOptions;
-
-    internal MessagingInstrumentService(IMessagingInstrumentAttributeProvider attributeProvider,
-        IOptionsMonitor<ClusterInstrumentOptions> instrumentOptions)
-    {
-        _attributeProvider = attributeProvider;
-        _instrumentOptions = instrumentOptions;
-    }
-
     public void OnMessageReceive(Message msg, int numTotalBytes, int headerBytes,
         ConnectionDirection connectionDirection, SiloAddress remoteSiloAddress = null)
     {
-        var detailed = _instrumentOptions.CurrentValue.DetailedMessageReceived;
+        var detailed = instrumentOptions.CurrentValue.DetailedMessageReceived;
         if (MessagingInstruments.MessageReceivedSizeHistogram.Enabled)
         {
-            if (detailed && msg.InterfaceType is { })
+            if (detailed)
             {
                 var tagList = new System.Diagnostics.TagList();
                 tagList.Add("ConnectionDirection", connectionDirection.ToString());
@@ -88,7 +82,7 @@ internal class MessagingInstrumentService : IMessagingInstrumentService
         SiloAddress remoteSiloAddress = null)
     {
         Debug.Assert(numTotalBytes >= 0, $"OnMessageSend(numTotalBytes={numTotalBytes})");
-        var detailed = _instrumentOptions.CurrentValue.DetailedMessageSent;
+        var detailed = instrumentOptions.CurrentValue.DetailedMessageSent;
 
         if (MessagingInstruments.MessageSentSizeHistogram.Enabled)
         {
@@ -133,37 +127,60 @@ internal class MessagingInstrumentService : IMessagingInstrumentService
 
     private string GetMessageTag(Message msg)
     {
-        if (msg.BodyObject is IInvokable request)
+        try
         {
-            return request.GetActivityName();
-        }
-
-        if (msg.BodyObject is Response response)
-        {
-            var result = response.Result;
-            if (result == null)
+            if (msg.BodyObject is IInvokable request)
             {
-                result = response.Exception;
+                return request.GetActivityName();
             }
 
-            if (result == null)
+            if (msg.BodyObject is Response response)
             {
-                result = response;
+                object result = response.Exception;
+                if (result == null)
+                {
+                    result = response.Result;
+                }
+
+                if (result == null)
+                {
+                    result = response;
+                }
+
+                if (msg.InterfaceType.IsDefault)
+                {
+                    return attributeProvider.GetMessageType(result);
+                }
+
+                return $"{msg.InterfaceType.ToString()}:{attributeProvider.GetMessageType(result)}";
             }
 
-            if (msg.InterfaceType.IsDefault)
+            if (msg.BodyObject != null)
             {
-                return _attributeProvider.GetMessageType(result);
+                return attributeProvider.GetMessageType(msg.BodyObject);
             }
 
-            return $"{msg.InterfaceType.ToString()}:{_attributeProvider.GetMessageType(result)}";
+            var interfaceName = msg.InterfaceType.ToString();
+            if (interfaceName != null)
+                return interfaceName;
+
+            if (msg.TargetGrain != default)
+            {
+                var grainName = msg.TargetGrain.ToString();
+                if (!string.IsNullOrEmpty(grainName))
+                    return grainName;
+            }
+
+            if (msg.Result != Message.ResponseTypes.None)
+            {
+                return msg.Result.ToString();
+            }
+
+            return msg.ToString();
         }
-
-        if (msg.BodyObject != null)
+        catch (Exception e)
         {
-            return _attributeProvider.GetMessageType(msg.BodyObject);
+            return $"{msg.ToString()} - Exception: {e.GetType()}";
         }
-
-        return msg.InterfaceType.ToString();
     }
 }

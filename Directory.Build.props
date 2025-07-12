@@ -56,11 +56,11 @@
 
   <!-- For Debug builds generated a date/time dependent version suffix -->
   <PropertyGroup Condition=" '$(Configuration)'=='Debug' ">
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-dev-5</VersionSuffix>
+    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-dev-10</VersionSuffix>
     <VersionSuffix Condition=" '$(VersionDateSuffix)'!='' ">$(VersionSuffix)-$(VersionDateSuffix)</VersionSuffix>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)'=='Release' ">
-    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-5</VersionSuffix>
+    <VersionSuffix Condition=" '$(VersionSuffix)'=='' ">panda-10</VersionSuffix>
   </PropertyGroup>
 
   <Import Condition=" '$(OrleansBuildTimeCodeGen)' == 'true' " Project="$(MSBuildThisFileDirectory)src/Orleans.CodeGenerator/build/Microsoft.Orleans.CodeGenerator.props" />
