@@ -12,7 +12,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-#nullable enable
 namespace Orleans.Runtime
 {
     /// <summary>
@@ -50,6 +49,8 @@ namespace Orleans.Runtime
 
         private const char SEPARATOR = '@';
 
+        private static readonly object LastGenerationLock = new();
+        private static long LastGeneration = 0;
         private static readonly long epoch = new DateTime(2022, 1, 1).Ticks;
 
         private static readonly Interner<(IPAddress Address, int Port, int Generation), SiloAddress> siloAddressInterningCache = new(InternerConstants.SIZE_MEDIUM);
@@ -105,6 +106,14 @@ namespace Orleans.Runtime
         public static int AllocateNewGeneration()
         {
             long elapsed = (DateTime.UtcNow.Ticks - epoch) / TimeSpan.TicksPerSecond;
+
+            // For tests which restart silos within 1 second, we need to ensure that the generation number is always increasing,
+            // since generation for a restarting silo must be unique.
+            lock (LastGenerationLock)
+            {
+                LastGeneration = elapsed = Math.Max(elapsed, LastGeneration + 1);
+            }
+            
             return unchecked((int)elapsed); // Unchecked to truncate any bits beyond the lower 32
         }
 
@@ -457,7 +466,7 @@ namespace Orleans.Runtime
     public sealed class SiloAddressConverter : JsonConverter<SiloAddress>
     {
         /// <inheritdoc />
-        public override SiloAddress Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => SiloAddress.FromParsableString(reader.GetString()!);
+        public override SiloAddress? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetString() is { } str ? SiloAddress.FromParsableString(str) : null;
 
         /// <inheritdoc />
         public override void Write(Utf8JsonWriter writer, SiloAddress value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToUtf8String());

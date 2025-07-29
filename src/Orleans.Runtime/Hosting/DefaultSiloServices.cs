@@ -268,7 +268,7 @@ namespace Orleans.Hosting
             services.AddFromExisting<IActivationWorkingSetObserver, IncomingRequestMonitor>();
 
             // Scoped to a grain activation
-            services.AddScoped<IGrainContext>(sp => RuntimeContext.Current);
+            services.AddScoped<IGrainContext>(sp => RuntimeContext.Current ?? throw new InvalidOperationException("No current grain context available."));
 
             services.TryAddSingleton<IConsistentRingProvider>(
                 sp =>
@@ -359,8 +359,6 @@ namespace Orleans.Hosting
 
             // Validate all CollectionAgeLimit values for the right configuration.
             services.AddTransient<IConfigurationValidator, GrainCollectionOptionsValidator>();
-
-            services.AddTransient<IConfigurationValidator, MemoryPressureGrainCollectionOptionsValidator>();
             services.AddTransient<IConfigurationValidator, LoadSheddingValidator>();
 
             services.TryAddSingleton<ITimerManager, TimerManagerImpl>();
